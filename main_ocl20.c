@@ -150,8 +150,6 @@ void K_Exp(uint8_t pk[32]) //The key expansion routine: Takes the 256-bit privat
 
 int main(int argc, const char * argv[])
 {
-    printf("CasAES_CL2 Hyperthreaded AES-256 Encryption for OpenCL 2.0 processors - compiled 12/8/2014 Rev. 2\nCarter McCardwell, Northeastern University NUCAR - http://coe.neu.edu/~cmccardw - mccardwell.net\n\nPlease Wait...\n");
-
     clock_t c_start, c_stop;
     c_start = clock(); //Create a clock to benchmark the time taken for execution
 
@@ -160,6 +158,11 @@ int main(int argc, const char * argv[])
     FILE *outfile;
     FILE *cl_code;
 
+    if(argc < 3) {
+      printf("Usage: ./main_ocl20 <mode> <infile> <keyfile> <outfile>\n");
+      printf("<mode> : h (hex) | a (ascii)\n");
+      exit(-1);
+    }
     infile = fopen(argv[2], "r"); //The second argument is the infile
     if (infile == NULL) { printf("error_in"); return(1); }
     keyfile = fopen(argv[3], "rb"); //The third argument is the keyfile, it must be in hex and broken into two charactor parts (eg. AA BB CC ...)
@@ -170,7 +173,11 @@ int main(int argc, const char * argv[])
 	int hexMode = 1; //The first argument dictates the mode the data is read in, 'h' indicates hex (AA BB CC is read in as AA BB CC), 'a' indicates ASCII/binary as the data is read verbatim
     if (strcmp(argv[1], "h") == 0) { hexMode = 1; }
     else if (strcmp(argv[1], "a") == 0) { hexMode = 0; }
-    else { printf("error: first argument must be \'a\' for ASCII interpretation or \'h\' for hex interpretation\n"); return(1); }
+    else {
+      printf("error: first argument must be \'a\' for ASCII interpretation"
+          "or \'h\' for hex interpretation\n");
+      return(1);
+    }
 
     uint8_t key[32];
 
@@ -195,7 +202,7 @@ int main(int argc, const char * argv[])
     free(key_element);
     append_str = stradd(append_str, "};\n");
 
-    cl_code = fopen("kernel_ocl20_svm.cl", "r");
+    cl_code = fopen("kernel_ocl20.cl", "r");
     if (cl_code == NULL) { printf("\nerror: clfile\n"); return(1); }
     char *source_str = (char *)malloc(MAX_SOURCE_SIZE);
     fread(source_str, 1, MAX_SOURCE_SIZE, cl_code);
@@ -214,7 +221,7 @@ int main(int argc, const char * argv[])
     err = clGetPlatformIDs(1, &platform, NULL);
     if (err != CL_SUCCESS) { printf("platformid"); }
 
-    err = clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, 1, &device, NULL);
+    err = clGetDeviceIDs(platform, CL_DEVICE_TYPE_CPU, 1, &device, NULL);
     if (err != CL_SUCCESS) { printf("getdeivceid %i", err); }
 
     cl_uint numberOfCores;
