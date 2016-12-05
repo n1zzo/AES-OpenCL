@@ -104,7 +104,7 @@ uint32_t sw(uint32_t word) //Sub-word: Performs an S-box substitution on the 4 8
     return subWord.word;
 }
 
-void K_Exp(uint8_t* pk) //The key expansion routine: Takes the 256-bit private key and expands it into 60 32-bit words that are stored in the array ek[]
+void K_Exp(uint8_t pk[32]) //The key expansion routine: Takes the 256-bit private key and expands it into 60 32-bit words that are stored in the array ek[]
 {                       //The logic of this function is defined in the AES spec
     int i = 0;
     union {
@@ -176,13 +176,13 @@ int main(int argc, const char * argv[])
 
     for (int i = 0; i < 32; i++)
     {
-        fscanf(keyfile, "%x", &key[i]); //Read the private key in
+        fscanf(keyfile, "%x", (unsigned int *)&key[i]); //Read the private key in
     }
 
     //Calculate expanded key on the CPU
-    K_Exp(&key); //The expansion runtime is faster to execute on the CPU (no kernel startup time) and we are able to store it in constant memory (see below)
+    K_Exp(key); //The expansion runtime is faster to execute on the CPU (no kernel startup time) and we are able to store it in constant memory (see below)
 
-    char *append_str = "#pragma OPENCL EXTENSION cl_khr_byte_addressable_store : enable\n#define Nb 4\n#define Nr 14\n#define Nk 8\n\n__constant uint eK[60]={";
+    const char *append_str = "#pragma OPENCL EXTENSION cl_khr_byte_addressable_store : enable\n#define Nb 4\n#define Nr 14\n#define Nk 8\n\n__constant uint eK[60]={";
     char *key_element;
     for (int i = 0; i < 60; i++) //The private key will be dynamically added to the source of the kernel before it is compiled, this means that it will be stored in constant memory
     {
@@ -267,7 +267,7 @@ int main(int argc, const char * argv[])
             {
                 if (hexMode == 1) //If hex mode
                 {
-                    if (fscanf(infile, "%x", &svn_ptr[(i*16)+ix]) != EOF) { ; } //Reads in hex
+                    if (fscanf(infile, "%x", (unsigned int *)&svn_ptr[(i*16)+ix]) != EOF) { ; } //Reads in hex
                     else
                     {
                         if (ix > 0) { for (int ixx = ix; ixx < 16; ixx++) { svn_ptr[(i*16)+ixx] = 0x00; } } //If the end of the file is reached, fill the rest of the state with 0x00
@@ -328,7 +328,6 @@ int main(int argc, const char * argv[])
         err = clSetKernelArgSVMPointer(aesKernal, 0, (void *)svn_ptr); //Specific function for SVM data
         if (err != CL_SUCCESS) { printf("setkernalsvmargs = %i", err); exit(1); }
 
-        const size_t local_ws = NULL; //For now, let the runtime decide on the local
         const size_t global_ws = spawn; //One WU per state in this round
         err = clEnqueueNDRangeKernel(queue, aesKernal, 1, 0, &global_ws, 0, 0, 0, 0); //Start the kernel
         if (err != CL_SUCCESS) { printf("enqueue = %i", err); fflush(NULL);  exit(1);}
