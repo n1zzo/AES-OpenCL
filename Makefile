@@ -1,4 +1,4 @@
-CFLAGS = -Wall --pedantic
+CFLAGS = -Wall -pedantic -std=c99 -O2 -pipe
 LDFLAGS = -lOpenCL
 
 all: main_ocl20

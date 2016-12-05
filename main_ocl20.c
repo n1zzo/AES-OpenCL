@@ -165,7 +165,7 @@ int main(int argc, const char * argv[])
     }
     infile = fopen(argv[2], "r"); //The second argument is the infile
     if (infile == NULL) { printf("error_in"); return(1); }
-    keyfile = fopen(argv[3], "rb"); //The third argument is the keyfile, it must be in hex and broken into two charactor parts (eg. AA BB CC ...)
+    keyfile = fopen(argv[3], "r"); //The third argument is the keyfile
     if (keyfile == NULL) { printf("error_key"); return(1); }
     outfile = fopen(argv[4], "w"); //The outfile, the encrypted results will be written here
     if (outfile == NULL) { printf("error (permission error: run with sudo or in directory the user owns)"); return (1); }
@@ -183,7 +183,7 @@ int main(int argc, const char * argv[])
 
     for (int i = 0; i < 32; i++)
     {
-        fscanf(keyfile, "%x", (unsigned int *)&key[i]); //Read the private key in
+        fscanf(keyfile, "%2hhX", &key[i]); //Read the key
     }
 
     //Calculate expanded key on the CPU
@@ -227,7 +227,7 @@ int main(int argc, const char * argv[])
     cl_uint numberOfCores;
     clGetDeviceInfo(device, CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(numberOfCores), &numberOfCores, NULL);
     if (numberOfCores > 1) { MAXIMUM_MEMORY_ALLOCATION = numberOfCores; }
-    printf("\nRunning with %i compute units", MAXIMUM_MEMORY_ALLOCATION); //Utilize the maximum number of compute units
+    printf("Running with %i compute units\n", MAXIMUM_MEMORY_ALLOCATION); //Utilize the maximum number of compute units
 
     context = clCreateContext(0, 1, &device, NULL, NULL, &err);
     if (err != CL_SUCCESS) { printf("context"); }
